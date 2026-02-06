@@ -1,0 +1,46 @@
+# =============================================================
+# Git Ignore for iRedMail Webmail Project
+# =============================================================
+
+# Sensitive data - NEVER commit these
+data/
+*.key
+*.pem
+.env
+.env.local
+.env.production
+iredmail-docker.conf
+
+# SSL certificates (keep self-signed templates, ignore real certs)
+nginx/ssl/*.crt
+nginx/ssl/*.key
+!nginx/ssl/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Docker
+.docker/
+
+# Backup files (large, stored elsewhere)
+*.sql
+*.sql.gz
+*.sql.bz2
+backup-*.tar.gz

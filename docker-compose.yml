@@ -1,0 +1,141 @@
+version: '3.8'
+
+services:
+  # =============================================================
+  # iRedMail - All-in-one Mail Server
+  # =============================================================
+  iredmail:
+    image: iredmail/mariadb:stable
+    container_name: iredmail
+    hostname: ${MAIL_HOSTNAME}
+
+    # Resource limits for 50-500 user deployment
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+    env_file:
+      - iredmail-docker.conf
+
+    environment:
+      - TZ=${TIMEZONE}
+
+    # Internal ports - Nginx will proxy HTTPS
+    ports:
+      - "25:25"       # SMTP (receiving from external MTAs)
+      - "587:587"     # Submission (STARTTLS)
+      - "465:465"     # SMTPS
+      - "993:993"     # IMAPS
+      - "995:995"     # POP3S
+      - "110:110"     # POP3
+      - "143:143"     # IMAP
+
+    volumes:
+      # Mailbox storage
+      - ./data/mailboxes:/var/vmail/vmail1
+      - iredmail_mlmmj:/var/vmail/mlmmj
+      - iredmail_mlmmj_archive:/var/vmail/mlmmj-archive
+
+      # Database
+      - ./data/mysql:/var/lib/mysql
+
+      # Backups
+      - ./data/backup:/var/vmail/backup
+
+      # SSL certificates
+      - ./data/ssl:/opt/iredmail/ssl
+
+      # Antivirus & spam
+      - iredmail_clamav:/var/lib/clamav
+      - iredmail_sa_rules:/var/lib/spamassassin
+
+      # Mail queue
+      - iredmail_postfix_queue:/var/spool/postfix
+
+      # Custom configurations (preserved on upgrades)
+      - iredmail_custom:/opt/iredmail/custom
+
+    networks:
+      - mail_network
+
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1/iredadmin/"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    restart: unless-stopped
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # =============================================================
+  # Nginx Reverse Proxy - SSL Termination
+  # =============================================================
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+
+    depends_on:
+      - iredmail
+
+    networks:
+      - mail_network
+
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    restart: unless-stopped
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# =============================================================
+# Named Volumes
+# =============================================================
+volumes:
+  iredmail_mlmmj:
+    driver: local
+  iredmail_mlmmj_archive:
+    driver: local
+  iredmail_clamav:
+    driver: local
+  iredmail_sa_rules:
+    driver: local
+  iredmail_postfix_queue:
+    driver: local
+  iredmail_custom:
+    driver: local
+
+# =============================================================
+# Networks
+# =============================================================
+networks:
+  mail_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,0 +1,33 @@
+# =============================================================
+# iRedMail Docker Configuration
+# =============================================================
+# Copy this file to iredmail-docker.conf and update values
+# cp iredmail-docker.conf.example iredmail-docker.conf
+
+# -------------------------------------------------------------
+# REQUIRED SETTINGS - Must be configured before first run
+# -------------------------------------------------------------
+
+# Server hostname (FQDN) - e.g., mail.company.com
+HOSTNAME=mail.yourdomain.com
+
+# Primary mail domain - e.g., company.com
+FIRST_MAIL_DOMAIN=yourdomain.com
+
+# Admin password for postmaster@FIRST_MAIL_DOMAIN
+# IMPORTANT: Change this before deploying!
+FIRST_MAIL_DOMAIN_ADMIN_PASSWORD=CHANGE_ME_STRONG_PASSWORD
+
+# API token for mailing list management
+# Generate with: openssl rand -base64 32
+MLMMJADMIN_API_TOKEN=GENERATE_WITH_OPENSSL
+
+# Roundcube session encryption key
+# Generate with: openssl rand -base64 24
+ROUNDCUBE_DES_KEY=GENERATE_WITH_OPENSSL
+
+# -------------------------------------------------------------
+# OPTIONAL: Timezone
+# -------------------------------------------------------------
+
+TZ=Asia/Ho_Chi_Minh
