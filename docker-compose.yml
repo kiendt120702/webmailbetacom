@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # =============================================================
   # iRedMail - All-in-one Mail Server
@@ -8,16 +6,6 @@ services:
     image: iredmail/mariadb:stable
     container_name: iredmail
     hostname: ${MAIL_HOSTNAME}
-
-    # Resource limits for 50-500 user deployment
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 8G
-        reservations:
-          cpus: '2'
-          memory: 4G
 
     env_file:
       - iredmail-docker.conf
