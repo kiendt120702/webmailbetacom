@@ -1,6 +1,6 @@
 services:
   # =============================================================
-  # iRedMail - All-in-one Mail Server
+  # iRedMail - All-in-one Mail Server (includes Nginx inside)
   # =============================================================
   iredmail:
     image: iredmail/mariadb:stable
@@ -13,9 +13,10 @@ services:
     environment:
       - TZ=${TIMEZONE}
 
-    # Internal ports - Nginx will proxy HTTPS
     ports:
-      - "25:25"       # SMTP (receiving from external MTAs)
+      - "80:80"       # HTTP (redirect to HTTPS)
+      - "443:443"     # HTTPS (Webmail)
+      - "25:25"       # SMTP
       - "587:587"     # Submission (STARTTLS)
       - "465:465"     # SMTPS
       - "993:993"     # IMAPS
@@ -45,18 +46,15 @@ services:
       # Mail queue
       - iredmail_postfix_queue:/var/spool/postfix
 
-      # Custom configurations (preserved on upgrades)
+      # Custom configurations
       - iredmail_custom:/opt/iredmail/custom
-
-    networks:
-      - mail_network
 
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1/iredadmin/"]
       interval: 60s
       timeout: 10s
       retries: 3
-      start_period: 120s
+      start_period: 180s
 
     restart: unless-stopped
 
@@ -65,41 +63,6 @@ services:
       options:
         max-size: "50m"
         max-file: "5"
-
-  # =============================================================
-  # Nginx Reverse Proxy - SSL Termination
-  # =============================================================
-  nginx:
-    image: nginx:alpine
-    container_name: nginx-proxy
-
-    ports:
-      - "80:80"
-      - "443:443"
-
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-
-    depends_on:
-      - iredmail
-
-    networks:
-      - mail_network
-
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-    restart: unless-stopped
-
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
 # =============================================================
 # Named Volumes
@@ -117,13 +80,3 @@ volumes:
     driver: local
   iredmail_custom:
     driver: local
-
-# =============================================================
-# Networks
-# =============================================================
-networks:
-  mail_network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
